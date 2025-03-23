@@ -1,37 +1,41 @@
 package com.example.underskrift_data.controller;
 
 import com.example.underskrift_data.models.SignDataDto;
+import com.example.underskrift_data.services.SignDataService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequiredArgsConstructor
 @Slf4j
 public class SignDataController {
 
 
-    private final JmsTemplate jmsTemplate;
-    private final ObjectMapper objectMapper;
+    private final SignDataService signDataService;
+
+    public SignDataController(SignDataService signDataService) {
+        this.signDataService = signDataService;
+    }
 
     @PostMapping("/sign-data")
-    public String sendMessage(@RequestBody SignDataDto signData) {
+    public String sendMessage(@RequestBody SignDataDto signDataDto) {
 
 
         try {
-            jmsTemplate.convertAndSend("test-queue", objectMapper.writeValueAsString(signData));
-        } catch (JsonProcessingException e) {
-            log.error("Error occurred: " + e.getMessage());
-            e.printStackTrace();
+            signDataService.saveSignData(signDataDto);
+            signDataService.sendSignDataEvent(signDataDto);
+        } catch (Exception e) {
+            log.error("Could not handle incoming sign data: " + signDataDto.getSignId());
+            // todo create error audit event here
+            throw new RuntimeException("Error while trying to handle incoming sign data, got message: "+ e.getMessage());
         }
 
-        log.info("Sign data saved to DB and sent to queue");
-        return "Message sent!";
+        log.info("Sign data saved to DB and sent to topic");
+        return "Success!!";
     }
 }

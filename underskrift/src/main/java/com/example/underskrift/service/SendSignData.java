@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -30,7 +31,7 @@ public class SendSignData {
                 .ipAddress("0.0.0.0")
                 .personalNumber("199109113978")
                 .status(SignDataDto.Status.SUCCESS)
-                .timestamp(Instant.now())
+                .timestamp(OffsetDateTime.now())
                 .build();
 
         restTemplate.postForEntity("http://localhost:8081/sign-data", signData, String.class);

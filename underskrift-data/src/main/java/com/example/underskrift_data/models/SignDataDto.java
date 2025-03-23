@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,7 +18,7 @@ import java.time.Instant;
 public class SignDataDto {
 
     private String signId;
-    private Instant timestamp;
+    private OffsetDateTime timestamp;
     private String ipAddress;
     private String personalNumber;
     private Status status;

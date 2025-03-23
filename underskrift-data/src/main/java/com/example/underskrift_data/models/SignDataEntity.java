@@ -1,29 +1,32 @@
-package com.example.underskrift.models;
+package com.example.underskrift_data.models;
 
-
-import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 
+@Entity
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Table(name = "sign_data")
 @Builder
-public class SignDataDto {
+public class SignDataEntity {
 
+    @Id
+    @Column(name = "sign_id")
     private String signId;
-    private OffsetDateTime timestamp;
-    private String ipAddress;
-    private String personalNumber;
-    private Status status;
 
-    public enum Status {
-        SUCCESS, FAILURE, CANCEL
-    }
+    private OffsetDateTime timestamp;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "personal_number")
+    private String personalNumber;
+
+    private String status;
 }
