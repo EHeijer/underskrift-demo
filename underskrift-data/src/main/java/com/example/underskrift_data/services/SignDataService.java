@@ -5,7 +5,6 @@ import com.example.underskrift_data.models.SignDataEntity;
 import com.example.underskrift_data.repositories.SignDataRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.jms.Session;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
@@ -24,7 +23,7 @@ public class SignDataService {
     }
 
     public void sendSignDataEvent(SignDataDto signDataDto) throws JsonProcessingException {
-        jmsTopicTemplate.convertAndSend("sign-data-topic", signDataDto);
+        jmsTopicTemplate.convertAndSend("sign-data-topic", objectMapper.writeValueAsBytes(signDataDto));
     }
 
     public void saveSignData(SignDataDto signDataDto) {

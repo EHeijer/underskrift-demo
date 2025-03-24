@@ -6,13 +6,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.connection.JmsTransactionManager;
+import org.springframework.jms.support.converter.SimpleMessageConverter;
 
 public class JmsListenerContainerFactory {
 
     private final ConnectionFactory artemisConnectionFactory;
+    private final SimpleMessageConverter simpleMessageConverter;
 
-    public JmsListenerContainerFactory(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory) {
+    public JmsListenerContainerFactory(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory, SimpleMessageConverter simpleMessageConverter) {
         this.artemisConnectionFactory = artemisConnectionFactory;
+        this.simpleMessageConverter = simpleMessageConverter;
     }
 
     public DefaultJmsListenerContainerFactory createTopicListenerContainerFactory() throws JMSException {
@@ -22,6 +25,7 @@ public class JmsListenerContainerFactory {
         factory.setSubscriptionShared(true);
         factory.setSubscriptionDurable(true);
         factory.setTransactionManager(getTransactionManager());
+        factory.setMessageConverter(simpleMessageConverter);
         //factory.setConcurrency("1-1");
         factory.setSessionTransacted(true);
         // todo: factory.setErrorHandler();
@@ -37,6 +41,7 @@ public class JmsListenerContainerFactory {
         factory.setTransactionManager(getTransactionManager());
         //factory.setConcurrency("1-1");
         factory.setSessionTransacted(true);
+        factory.setMessageConverter(simpleMessageConverter);
         // todo: factory.setErrorHandler();
         return factory;
     }

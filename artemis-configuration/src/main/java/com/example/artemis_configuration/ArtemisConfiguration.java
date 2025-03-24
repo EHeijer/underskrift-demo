@@ -11,6 +11,7 @@ import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.SimpleMessageConverter;
 
 @Configuration
 @EnableJms
@@ -28,23 +29,28 @@ public class ArtemisConfiguration {
     }
 
     @Bean
-    public JmsTemplate jmsQueueTemplate(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory, @Qualifier("customMessageConverter") MessageConverter messageConverter) {
-        return new JmsTemplateSupport(artemisConnectionFactory, messageConverter).createJmsQueueTemplate();
+    public JmsTemplate jmsQueueTemplate(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory) {
+        return new JmsTemplateSupport(artemisConnectionFactory, new SimpleMessageConverter()).createJmsQueueTemplate();
     }
 
     @Bean
-    public JmsTemplate jmsTopicTemplate(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory, @Qualifier("customMessageConverter") MessageConverter messageConverter) {
-        return new JmsTemplateSupport(artemisConnectionFactory, messageConverter).createJmsTopicTemplate();
+    public JmsTemplate jmsTopicTemplate(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory) {
+        return new JmsTemplateSupport(artemisConnectionFactory, new SimpleMessageConverter()).createJmsTopicTemplate();
     }
 
     @Bean
     public DefaultJmsListenerContainerFactory queueListenerContainerFactory(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory) throws JMSException {
-        return new JmsListenerContainerFactory(artemisConnectionFactory).createQueueListenerContainerFactory();
+        return new JmsListenerContainerFactory(artemisConnectionFactory, new SimpleMessageConverter()).createQueueListenerContainerFactory();
     }
 
     @Bean
     public DefaultJmsListenerContainerFactory topicListenerContainerFactory(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory) throws JMSException {
-        return new JmsListenerContainerFactory(artemisConnectionFactory).createTopicListenerContainerFactory();
+        return new JmsListenerContainerFactory(artemisConnectionFactory, new SimpleMessageConverter()).createTopicListenerContainerFactory();
+    }
+
+    @Bean
+    public JmsListenerSupport jmsListenerSupport(DefaultJmsListenerContainerFactory queueListenerContainerFactory, DefaultJmsListenerContainerFactory topicListenerContainerFactory) {
+        return new JmsListenerSupport(queueListenerContainerFactory, topicListenerContainerFactory);
     }
 
 }

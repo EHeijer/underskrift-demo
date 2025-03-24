@@ -4,21 +4,22 @@ import jakarta.jms.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
+import org.springframework.jms.support.converter.SimpleMessageConverter;
 
 public class JmsTemplateSupport {
 
     private final ConnectionFactory artemisConnectionFactory;
-    private final MessageConverter customMessageConverter;
+    private final SimpleMessageConverter simpleMessageConverter;
 
-    public JmsTemplateSupport(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory, @Qualifier("customMessageConverter") MessageConverter customMessageConverter) {
+    public JmsTemplateSupport(@Qualifier("artemisConnectionFactory") ConnectionFactory artemisConnectionFactory, SimpleMessageConverter simpleMessageConverter) {
         this.artemisConnectionFactory = artemisConnectionFactory;
-        this.customMessageConverter = customMessageConverter;
+        this.simpleMessageConverter = simpleMessageConverter;
     }
 
     public JmsTemplate createJmsQueueTemplate(){
 
         JmsTemplate jmsTemplate = new JmsTemplate(artemisConnectionFactory);
-        jmsTemplate.setMessageConverter(customMessageConverter);
+        jmsTemplate.setMessageConverter(simpleMessageConverter);
         jmsTemplate.setSessionTransacted(true);
         jmsTemplate.setPubSubDomain(false);
 
@@ -28,7 +29,7 @@ public class JmsTemplateSupport {
     public JmsTemplate createJmsTopicTemplate(){
 
         JmsTemplate jmsTemplate = new JmsTemplate(artemisConnectionFactory);
-        jmsTemplate.setMessageConverter(customMessageConverter);
+        jmsTemplate.setMessageConverter(simpleMessageConverter);
         jmsTemplate.setSessionTransacted(true);
         jmsTemplate.setPubSubDomain(true);
 
