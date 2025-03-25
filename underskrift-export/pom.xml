@@ -83,6 +83,28 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.jsonschema2pojo</groupId>
+				<artifactId>jsonschema2pojo-maven-plugin</artifactId>
+				<version>1.1.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<sourceDirectory>${project.basedir}/src/main/resources/schema</sourceDirectory>
+					<targetPackage>com.example.underskrift_export.generated</targetPackage>
+					<generateBuilders>true</generateBuilders>
+					<useLongIntegers>true</useLongIntegers>
+					<includeGeneratedAnnotation>true</includeGeneratedAnnotation>
+					<annotationStyle>jackson</annotationStyle>
+					<dateTimeType>java.time.OffsetDateTime</dateTimeType>  <!-- Ändra Date till OffsetDateTime -->
+					<formatDateTimes>true</formatDateTimes> <!-- Se till att OffsetDateTime används -->
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

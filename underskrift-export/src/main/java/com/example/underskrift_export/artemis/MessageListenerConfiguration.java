@@ -12,7 +12,7 @@ import java.util.List;
 @Configuration
 public class MessageListenerConfiguration {
 
-    @Bean
+    /*@Bean
     public CustomJmsListenerConfigurer customJmsListenerConfigurer(JmsListenerSupport jmsListenerSupport, @Qualifier("signDataSubscriberListener") SignDataSubscriberListener SignDataSubscriberListener) {
         return jmsListenerSupport.customJmsListenerConfigurer(List.of(
                 new ArtemisListenerSetting(
@@ -22,5 +22,5 @@ public class MessageListenerConfiguration {
                         SignDataSubscriberListener
                 )
         ));
-    }
+    }*/
 }

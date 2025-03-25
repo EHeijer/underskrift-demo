@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "signId": {
+      "type": "string",
+      "description": "Identifier for the sign event"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the sign event in ISO 8601 format"
+    },
+    "ipAddress": {
+      "type": "string",
+      "description": "IP address of the signer"
+    },
+    "personalNumber": {
+      "type": "string",
+      "description": "Personal identification number of the signer"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE", "CANCEL"],
+      "description": "Status of the signing process"
+    }
+  },
+  "required": ["signId", "timestamp", "ipAddress", "personalNumber", "status"]
+}

@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "sign_data")
+@Table(name = "signature_data")
 @Builder
 public class SignDataEntity {
 
