@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SignDataService {
@@ -26,6 +27,7 @@ public class SignDataService {
         jmsTopicTemplate.convertAndSend("sign-data-topic", objectMapper.writeValueAsBytes(signDataDto));
     }
 
+    @Transactional
     public void saveSignData(SignDataDto signDataDto) {
         SignDataEntity signDataEntity = SignDataEntity.builder()
                 .signId(signDataDto.getSignId())

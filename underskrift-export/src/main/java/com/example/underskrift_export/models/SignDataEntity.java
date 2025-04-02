@@ -1,15 +1,13 @@
 package com.example.underskrift_export.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -20,6 +18,19 @@ import java.time.OffsetDateTime;
 public class SignDataEntity {
 
     @Id
+    @Column(name = "signature_id")
+    private String signatureId;
+
+    @Column(name = "signed_at")
+    private OffsetDateTime signedAt;
+
+    @Column(name = "saved_at")
+    private OffsetDateTime savedAt;
+
+    @Column(name = "signature_data_json")
+    private String signatureDataJson;
+
+    /*@Id
     @Column(name = "sign_id")
     private String signId;
 
@@ -31,5 +42,5 @@ public class SignDataEntity {
     @Column(name = "personal_number")
     private String personalNumber;
 
-    private String status;
+    private String status;*/
 }

@@ -1,20 +1,17 @@
 package com.example.underskrift_export.artemis;
 
-import com.example.underskrift_export.generated.SignatureDataUbmV1;
 import com.example.underskrift_export.models.SignDataDto;
-import com.example.underskrift_export.models.SignDataEntity;
 import com.example.underskrift_export.services.SignDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.jms.BytesMessage;
 import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.MessageListener;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class SignDataSubscriberListener {
 
     private final SignDataService signDataService;
@@ -32,13 +29,13 @@ public class SignDataSubscriberListener {
     )
     public void onMessage(byte[] message) {
 
+        SignDataDto signDataDto = null;
         try {
-            SignDataDto signDataDto = readAsSignDataDto(message);
-            System.out.println("Received signData: " + signDataDto);
-
-
+            signDataDto = readAsSignDataDto(message);
+            log.info("Received signData: " + signDataDto);
             signDataService.saveSignData(signDataDto);
         } catch (Exception exception) {
+            log.error("Something went wrong when trying to save incoming signature data {}. Error message: {}", signDataDto, exception.getMessage());
             throw new RuntimeException(exception.getMessage());
         }
     }

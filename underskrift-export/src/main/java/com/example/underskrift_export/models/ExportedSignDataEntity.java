@@ -20,9 +20,13 @@ import java.time.OffsetDateTime;
 public class ExportedSignDataEntity {
 
     @Id
-    @Column(name = "sign_id")
-    private String signId;
+    @Column(name = "signature_id")
+    private String signatureId;
 
-    private OffsetDateTime timestamp;
+    @Column(name = "signed_at")
+    private OffsetDateTime signedAt;
+
+    @Column(name = "exported_at")
+    private OffsetDateTime exportedAt;
 
 }
