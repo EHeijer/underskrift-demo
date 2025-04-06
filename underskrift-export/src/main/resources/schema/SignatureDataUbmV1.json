@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
-    "signId": {
+    "signatureId": {
       "type": "string",
-      "description": "Identifier for the sign event"
+      "description": "Identifier for the signature event"
     },
     "timestamp": {
       "type": "string",
@@ -23,7 +23,11 @@
       "type": "string",
       "enum": ["SUCCESS", "FAILURE", "CANCEL"],
       "description": "Status of the signing process"
+    },
+    "statusMessage": {
+      "type": "string",
+      "description": "Status message of the signing process - only used if not status isn't success"
     }
   },
-  "required": ["signId", "timestamp", "ipAddress", "personalNumber", "status"]
+  "required": ["signatureId", "timestamp", "ipAddress", "personalNumber", "status"]
 }

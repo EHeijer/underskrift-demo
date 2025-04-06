@@ -1,9 +1,8 @@
 package com.example.underskrift_export.artemis;
 
-import com.example.underskrift_export.models.SignDataDto;
+import com.example.underskrift_export.models.SignatureDataDTO;
 import com.example.underskrift_export.services.SignDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.jms.JMSException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
@@ -12,40 +11,37 @@ import java.io.IOException;
 
 @Component
 @Slf4j
-public class SignDataSubscriberListener {
+public class SignatureDataSubscriberListener {
 
     private final SignDataService signDataService;
     private final ObjectMapper objectMapper;
 
-    public SignDataSubscriberListener(SignDataService signDataService, ObjectMapper objectMapper) {
+    public SignatureDataSubscriberListener(SignDataService signDataService, ObjectMapper objectMapper) {
         this.signDataService = signDataService;
         this.objectMapper = objectMapper;
     }
 
     @JmsListener(
-            destination = "sign-data-topic",
-            subscription = "sign-data-subscriber",
+            destination = "signature-data-topic",
+            subscription = "underskrift-export-subscriber",
             containerFactory = "topicListenerContainerFactory"
     )
     public void onMessage(byte[] message) {
 
-        SignDataDto signDataDto = null;
+        SignatureDataDTO signatureDataDto = null;
         try {
-            signDataDto = readAsSignDataDto(message);
-            log.info("Received signData: " + signDataDto);
-            signDataService.saveSignData(signDataDto);
+            signatureDataDto = readAsSignDataDto(message);
+            log.info("Received signData: " + signatureDataDto);
+            signDataService.saveSignData(signatureDataDto);
         } catch (Exception exception) {
-            log.error("Something went wrong when trying to save incoming signature data {}. Error message: {}", signDataDto, exception.getMessage());
+            log.error("Something went wrong when trying to save incoming signature data {}. Error message: {}", signatureDataDto, exception.getMessage());
             throw new RuntimeException(exception.getMessage());
         }
     }
 
-    private SignDataDto readAsSignDataDto(byte[] bytesMessage) throws JMSException, IOException {
-//        byte[] bytes = new byte[(int) bytesMessage.getBodyLength()];
-//        bytesMessage.readBytes(bytes);
-
-        SignDataDto signDataDto = objectMapper.readValue(bytesMessage, SignDataDto.class);
-        return signDataDto;
+    private SignatureDataDTO readAsSignDataDto(byte[] bytesMessage) throws IOException {
+        SignatureDataDTO signatureDataDto = objectMapper.readValue(bytesMessage, SignatureDataDTO.class);
+        return signatureDataDto;
     }
 
      /*@Override

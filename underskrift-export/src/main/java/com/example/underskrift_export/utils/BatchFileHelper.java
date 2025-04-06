@@ -1,8 +1,6 @@
 package com.example.underskrift_export.utils;
 
-import com.example.underskrift_export.models.SignDataEntity;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.example.underskrift_export.models.SignatureDataEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +16,7 @@ import java.util.List;
 @Slf4j
 public class BatchFileHelper {
 
-    public String writeSignDataJsonToBatchFile(List<SignDataEntity> signDataEntityList) {
+    public String writeSignDataJsonToBatchFile(List<SignatureDataEntity> signatureDataEntityList) {
         //JsonFactory jsonFactory = objectMapper.getFactory();
         Path tmpSignDataPath = Paths.get("signdata");
         if(Files.notExists(tmpSignDataPath)){
@@ -38,11 +36,11 @@ public class BatchFileHelper {
         ) {
 
             // Strömma JSON-objekten rad för rad
-            for (int i = 0; i < signDataEntityList.size(); i++) {
-                SignDataEntity signDataEntity = signDataEntityList.get(i);
+            for (int i = 0; i < signatureDataEntityList.size(); i++) {
+                SignatureDataEntity signatureDataEntity = signatureDataEntityList.get(i);
                 //jsonGenerator.writeRawValue(objectMapper.writeValueAsString());
 
-                writer.write(signDataEntity.getSignatureDataJson() + System.lineSeparator());
+                writer.write(signatureDataEntity.getSignatureDataJson() + System.lineSeparator());
                 writer.flush(); // Tvinga skrivning direkt (strömmande)
             }
             log.info("batchfile with sign data created: " + fileName);

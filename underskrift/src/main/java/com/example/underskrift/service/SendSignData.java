@@ -1,6 +1,6 @@
 package com.example.underskrift.service;
 
-import com.example.underskrift.models.SignDataDto;
+import com.example.underskrift.models.SignatureDataDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -22,19 +21,19 @@ public class SendSignData {
 
     private final RestTemplate restTemplate;
 
-    @Scheduled(fixedRateString = "${sendSignData.interval:1000}")
+    @Scheduled(fixedRateString = "${sendSignData.interval:10}")
     @Async // Execute in a separate thread
     public void sendSignData() {
 
-        SignDataDto signData = SignDataDto.builder()
-                .signId(UUID.randomUUID().toString())
+        SignatureDataDTO signData = SignatureDataDTO.builder()
+                .signatureId(UUID.randomUUID().toString())
                 .ipAddress("0.0.0.0")
                 .personalNumber("199109113978")
-                .status(SignDataDto.Status.SUCCESS)
+                .status(SignatureDataDTO.Status.SUCCESS)
                 .timestamp(OffsetDateTime.now())
                 .build();
 
-        restTemplate.postForEntity("http://localhost:8081/sign-data", signData, String.class);
+        restTemplate.postForEntity("http://localhost:8081/signature-data", signData, String.class);
 
         log.info("Sign data sent");
     }

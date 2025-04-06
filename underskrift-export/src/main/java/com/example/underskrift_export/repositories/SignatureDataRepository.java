@@ -1,6 +1,6 @@
 package com.example.underskrift_export.repositories;
 
-import com.example.underskrift_export.models.SignDataEntity;
+import com.example.underskrift_export.models.SignatureDataEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.OffsetDateTime;
 
 @Repository
-public interface SignDataRepository extends JpaRepository<SignDataEntity, String> {
+public interface SignatureDataRepository extends JpaRepository<SignatureDataEntity, Long> {
 
     @Modifying
     @Query(value = "DELETE FROM signature_data s WHERE s.saved_at < :now", nativeQuery = true)

@@ -1,4 +1,4 @@
-package com.example.underskrift_data.models;
+package com.example.underskrift.models;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 
 @NoArgsConstructor
@@ -15,13 +14,14 @@ import java.time.OffsetDateTime;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
-public class SignDataDto {
+public class SignatureDataDTO {
 
-    private String signId;
+    private String signatureId;
     private OffsetDateTime timestamp;
     private String ipAddress;
     private String personalNumber;
     private Status status;
+    private String statusMessage;
 
     public enum Status {
         SUCCESS, FAILURE, CANCEL

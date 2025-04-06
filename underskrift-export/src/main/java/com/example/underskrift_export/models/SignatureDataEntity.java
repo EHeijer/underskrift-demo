@@ -15,9 +15,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "signature_data")
 @Builder
-public class SignDataEntity {
+public class SignatureDataEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     @Column(name = "signature_id")
     private String signatureId;
 

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.OffsetDateTime;
 
 @Repository
-public interface ExportedSignDataRepository extends JpaRepository<ExportedSignDataEntity, String> {
+public interface ExportedSignDataRepository extends JpaRepository<ExportedSignDataEntity, Long> {
 
     @Modifying
     @Query(value = "INSERT INTO exported_signature_data (signature_id, signed_at, exported_at) VALUES (:signatureId, :signedAt, :exportedAt)", nativeQuery = true)

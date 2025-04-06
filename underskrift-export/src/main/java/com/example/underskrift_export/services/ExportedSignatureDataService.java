@@ -1,6 +1,6 @@
 package com.example.underskrift_export.services;
 
-import com.example.underskrift_export.models.SignDataEntity;
+import com.example.underskrift_export.models.SignatureDataEntity;
 import com.example.underskrift_export.repositories.ExportedSignDataRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +18,14 @@ public class ExportedSignatureDataService {
     }
 
     @Transactional
-    public void saveExportedSignatureIdsInBulk(List<SignDataEntity> signDataEntityList) {
+    public void saveExportedSignatureIdsInBulk(List<SignatureDataEntity> signatureDataEntityList) {
         OffsetDateTime exportedAt = OffsetDateTime.now();
 
-        for (int i = 0; i < signDataEntityList.size(); i++) {
-            SignDataEntity signDataEntity = signDataEntityList.get(i);
+        for (int i = 0; i < signatureDataEntityList.size(); i++) {
+            SignatureDataEntity signatureDataEntity = signatureDataEntityList.get(i);
             exportedSignDataRepository.saveExportedSignatureId(
-                    signDataEntity.getSignatureId(),
-                    signDataEntity.getSignedAt(),
+                    signatureDataEntity.getSignatureId(),
+                    signatureDataEntity.getSignedAt(),
                     exportedAt
             );
         }
