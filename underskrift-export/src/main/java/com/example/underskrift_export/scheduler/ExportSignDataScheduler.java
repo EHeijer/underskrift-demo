@@ -17,7 +17,7 @@ public class ExportSignDataScheduler {
     private final SignDataService signDataService;
 
 
-    @Scheduled(fixedRateString = "${exportSignData.interval:1000000}", initialDelay = 100000)
+    @Scheduled(fixedRateString = "${exportSignData.interval:1000000}", initialDelay = 10000)
     @Async // Execute in a separate thread
     public void exportSignData() {
 

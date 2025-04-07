@@ -19,7 +19,8 @@ public class ArtemisConnectionFactory {
         this.artemisConnectionProperties = artemisConnectionProperties;
     }
 
-    public ConnectionFactory createArtemisConnectionFactory() throws JMSException {
+
+    public ConnectionFactory createArtemisConnectionFactory() {
 
         List<ArtemisConnectionProperties.Broker> brokers = artemisConnectionProperties.brokers();
         // todo: kasta exception om brokers saknas

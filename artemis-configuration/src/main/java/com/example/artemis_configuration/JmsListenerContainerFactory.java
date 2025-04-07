@@ -35,9 +35,7 @@ public class JmsListenerContainerFactory {
     public DefaultJmsListenerContainerFactory createQueueListenerContainerFactory() throws JMSException {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(artemisConnectionFactory);
-        factory.setPubSubDomain(true);
-        factory.setSubscriptionShared(true);
-        factory.setSubscriptionDurable(true);
+        factory.setPubSubDomain(false);
         factory.setTransactionManager(getTransactionManager());
         //factory.setConcurrency("1-1");
         factory.setSessionTransacted(true);
