@@ -1,11 +1,10 @@
 package com.example.underskrift_export.services;
 
-import com.example.underskrift_export.models.SignatureDataEntity;
+import com.example.underskrift_export.models.SignatureDataUbmEntity;
 import com.example.underskrift_export.repositories.ExportedSignDataRepository;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,7 +22,7 @@ public class ExportedSignatureDataService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public void saveExportedSignatureIdsInBulk(List<SignatureDataEntity> signatureDataEntityList) {
+    public void saveExportedSignatureIdsInBulk(List<SignatureDataUbmEntity> signatureDataUbmEntityList) {
         String sql = "INSERT INTO exported_signature_data (signature_id, signed_at, exported_at) VALUES (?, ?, ?)";
         //                                                      1             2           3              1  2  3
 
@@ -31,14 +30,14 @@ public class ExportedSignatureDataService {
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                SignatureDataEntity signatureDataEntity = signatureDataEntityList.get(i);
-                ps.setString(1, signatureDataEntity.getSignatureId());
-                ps.setObject(2, signatureDataEntity.getSignedAt()); // Använder OffsetDateTime
+                SignatureDataUbmEntity signatureDataUbmEntity = signatureDataUbmEntityList.get(i);
+                ps.setString(1, signatureDataUbmEntity.getSignatureId());
+                ps.setObject(2, signatureDataUbmEntity.getSignedAt()); // Använder OffsetDateTime
                 ps.setObject(3, exportedAt);
             }
 
             public int getBatchSize() {
-                return signatureDataEntityList.size();
+                return signatureDataUbmEntityList.size();
             }
         });
 

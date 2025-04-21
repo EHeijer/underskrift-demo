@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Date;
 
 @Entity
 @Data
@@ -24,7 +25,7 @@ public class SignatureDataEntity {
     private String signatureId;
 
     @Column(nullable = false)
-    private OffsetDateTime timestamp;
+    private Date timestamp;
 
     @Column(name = "ip_address", nullable = false)
     private String ipAddress;

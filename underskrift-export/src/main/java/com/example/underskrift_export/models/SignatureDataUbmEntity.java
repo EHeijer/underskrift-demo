@@ -7,28 +7,29 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Date;
 import java.util.UUID;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "signature_data")
+@Table(name = "signature_data_ubm")
 @Builder
-public class SignatureDataEntity {
+public class SignatureDataUbmEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "signature_id")
     private String signatureId;
 
     @Column(name = "signed_at")
-    private OffsetDateTime signedAt;
+    private Date signedAt;
 
     @Column(name = "saved_at")
-    private OffsetDateTime savedAt;
+    private Date savedAt;
 
     @Column(name = "signature_data_json")
     private String signatureDataJson;

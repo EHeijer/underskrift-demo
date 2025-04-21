@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Date;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,7 +18,7 @@ import java.time.OffsetDateTime;
 public class SignatureDataDTO {
 
     private String signatureId;
-    private OffsetDateTime timestamp;
+    private Date timestamp;
     private String ipAddress;
     private String personalNumber;
     private Status status;

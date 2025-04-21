@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
 public class ExportedSignDataEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "signature_id")
