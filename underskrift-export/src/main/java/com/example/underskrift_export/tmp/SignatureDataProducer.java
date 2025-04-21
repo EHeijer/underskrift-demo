@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+//@Service
 @Slf4j
 @EnableScheduling
 public class SignatureDataProducer {
