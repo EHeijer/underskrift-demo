@@ -127,7 +127,17 @@ public class SignDataService {
                 Writer writer = new BufferedWriter(new OutputStreamWriter(maybeGzipOut, StandardCharsets.UTF_8), 256 * 1024)
         ) {
 
-            jdbcTemplate.query("SELECT id, signature_id, signed_at, signature_data_json FROM " + SIGNATURE_DATA_UBM_TABLE, (ResultSet resultSet) -> {
+            jdbcTemplate.query(con -> {
+                PreparedStatement ps = con.prepareStatement(
+                        "SELECT id, signature_id, signed_at, signature_data_json FROM " + SIGNATURE_DATA_UBM_TABLE,
+                        ResultSet.TYPE_FORWARD_ONLY,
+                        ResultSet.CONCUR_READ_ONLY
+                );
+                //För PostgreSQL är dessaa krav för strömning att fungera:
+                con.setAutoCommit(false);
+                ps.setFetchSize(1000);
+                return ps;
+            }, (ResultSet resultSet) -> {
 
                 List<Long> idBatch = new ArrayList<>(DELETE_BATCH_SIZE);
                 List<Object[]> archiveBatch = new ArrayList<>(ARCHIVE_BATCH_SIZE);
