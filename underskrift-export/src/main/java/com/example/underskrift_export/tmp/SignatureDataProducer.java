@@ -32,7 +32,7 @@ public class SignatureDataProducer {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedRateString = "${sendSignData.interval:10000}")
+    @Scheduled(fixedRateString = "${sendSignData.interval:1000}")
     @Async // Execute in a separate thread
     public void exportSignData() throws JsonProcessingException {
 

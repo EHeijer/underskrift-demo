@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -41,7 +43,7 @@ public class SignDataService {
 
     public static final String SIGNATURE_DATA_UBM_TABLE = "signature_data_ubm";
     public static final String EXPORTED_SIGNATURE_DATA_TABLE = "exported_signature_data";
-    public static final int GZIP_TRESHOLD = 100000;
+    public static final int GZIP_TRESHOLD = 150000;
     private final SignatureDataRepository signatureDataRepository;
     private final SignDataMapper signDataMapper;
     private final ObjectMapper objectMapper;
@@ -124,12 +126,14 @@ public class SignDataService {
                 OutputStream maybeGzipOut = useGzip ? new GZIPOutputStream(bufferedOut) : bufferedOut;
                 Writer writer = new BufferedWriter(new OutputStreamWriter(maybeGzipOut, StandardCharsets.UTF_8), 256 * 1024)
         ) {
-            List<Long> idBatch = new ArrayList<>();
-            List<Object[]> archiveBatch = new ArrayList<>();
-            Date exportedAt = new Date();
 
             jdbcTemplate.query("SELECT id, signature_id, signed_at, signature_data_json FROM " + SIGNATURE_DATA_UBM_TABLE, (ResultSet resultSet) -> {
-                do {
+
+                List<Long> idBatch = new ArrayList<>(DELETE_BATCH_SIZE);
+                List<Object[]> archiveBatch = new ArrayList<>(ARCHIVE_BATCH_SIZE);
+                Date exportedAt = new Date();
+
+                while (resultSet.next()) {
                     Long id = resultSet.getLong("id");
                     String signatureId = resultSet.getString("signature_id");
                     Date signedAt = resultSet.getDate("signed_at");
@@ -138,7 +142,6 @@ public class SignDataService {
                     // 1. Skriv till fil
                     try {
                         writer.write(signatureDataJson + System.lineSeparator());
-                        writer.flush();
                     } catch (IOException exception) {
                         log.error("Error when trying to write sign data to file {}, got exception message: {}", tempFile, exception.getMessage());
                         throw new RuntimeException(exception);
@@ -161,11 +164,12 @@ public class SignDataService {
                         deleteFromSignatureDataTable(idBatch);
                         idBatch.clear();
                     }
-                } while(resultSet.next());
+                }
 
                 // sista batcharna
                 if (!archiveBatch.isEmpty()) archiveExportedSignatures(archiveBatch);
                 if (!idBatch.isEmpty()) deleteFromSignatureDataTable(idBatch);
+                return null;
             });
         }
 
@@ -201,7 +205,12 @@ public class SignDataService {
         Instant endDeleteFile = Instant.now();
         System.out.println("DELETE_FILE elapsed Time: " + Duration.between(startDeleteFile, endDeleteFile).toString());
 
-        System.out.printf("✅ Export + arkivering + radering klar (%d rader, gzip=%s)%n", numberOfSignatureDataToExport, useGzip);
+        Runtime runtime = Runtime.getRuntime();
+        runtime.gc(); // Trigga GC för mer exakt mätning
+
+        long usedMemoryBytes = runtime.totalMemory() - runtime.freeMemory();
+        double usedMemoryMB = usedMemoryBytes / (1024.0 * 1024);
+        log.info("🔍 Used heap memory: {} MB", String.format("%.2f", usedMemoryMB));
     }
 
     private void archiveExportedSignatures(List<Object[]> batch) {
