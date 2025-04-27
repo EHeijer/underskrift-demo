@@ -16,30 +16,27 @@ import java.util.List;
 @Slf4j
 public class BatchFileHelper {
 
-    public File createTempFile(boolean useGzip) {
+    public File createTempFile() {
 
-        /*String signatureDataPath = "signatureData";
-        Path tmpdir = Files.createTempDirectory(Paths.get("target"), "tmpDirPrefix");
-        Path tmpSignDataPath = Paths.get(System.getProperty("java.io.tmpdir"), signatureDataPath);
-        if(Files.notExists(tmpSignDataPath)){
-            try {
-                Path tempDirectory = Files.createTempDirectory(signatureDataPath).;
-            } catch (IOException exception) {
-                log.error("Error when trying to create directory {}, got exception message: {}", tmpSignDataPath, exception.getMessage());
-                throw new RuntimeException(exception);
-            }
-        }*/
-
-        String extension = useGzip ? ".gz" : ".csv";
-        String formattedDateTime = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss"));
+        String extension = ".gz";
+        String formattedDateTime = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName =  "sign_data_" + formattedDateTime;
         try {
             return Files.createTempFile(fileName, extension).toFile();
         } catch (IOException exception) {
-            log.error("Error when trying to temp file {}, got exception message: {}", fileName+extension, exception.getMessage());
+            log.error("Error when trying to create temp file", exception);
             throw new RuntimeException(exception);
         }
 
+    }
+
+    public void flushAndClose(Writer writer) {
+        try {
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public String writeSignDataJsonToBatchFile(List<SignatureDataUbmEntity> signatureDataUbmEntityList) {

@@ -22,7 +22,7 @@ public class SendSignData {
 
     private final RestTemplate restTemplate;
 
-    @Scheduled(fixedRateString = "${sendSignData.interval:10}")
+    @Scheduled(fixedRateString = "${sendSignData.interval:1000}")
     @Async // Execute in a separate thread
     public void sendSignData() {
 

@@ -1,7 +1,7 @@
 package com.example.underskrift_export.tmp;
 
 import com.example.underskrift_export.models.SignatureDataDTO;
-import com.example.underskrift_export.services.SignDataService;
+import com.example.underskrift_export.services.ReceiveDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.jms.BytesMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +19,11 @@ import java.util.List;
 @Slf4j
 public class SignatureDataExportListener {
 
-    private final SignDataService signDataService;
+    private final ReceiveDataService receiveDataService;
     private final ObjectMapper objectMapper;
 
-    public SignatureDataExportListener(SignDataService signDataService, ObjectMapper objectMapper) {
-        this.signDataService = signDataService;
+    public SignatureDataExportListener(ReceiveDataService receiveDataService, ObjectMapper objectMapper) {
+        this.receiveDataService = receiveDataService;
         this.objectMapper = objectMapper;
     }
 

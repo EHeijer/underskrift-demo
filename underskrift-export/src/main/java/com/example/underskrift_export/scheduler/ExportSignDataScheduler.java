@@ -1,6 +1,7 @@
 package com.example.underskrift_export.scheduler;
 
-import com.example.underskrift_export.services.SignDataService;
+import com.example.underskrift_export.services.ExportDataService;
+import com.example.underskrift_export.services.ReceiveDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -17,10 +18,10 @@ import java.time.Instant;
 @EnableScheduling
 public class ExportSignDataScheduler {
 
-    private final SignDataService signDataService;
+    private final ExportDataService exportDataService;
 
 
-    @Scheduled(fixedRateString = "${exportSignData.interval:1000000}", initialDelay = 10000)
+    @Scheduled(fixedRateString = "${exportSignData.interval:1500000}", initialDelay = 400000)
     @Async // Execute in a separate thread
     public void exportSignData() {
 
@@ -29,7 +30,7 @@ public class ExportSignDataScheduler {
             log.info("Export of sign data START: " + start);
 
             //signDataService.exportSignData();
-            signDataService.exportArchiveAndDelete();
+            exportDataService.exportArchiveAndDelete();
 
             Instant end = Instant.now();
             log.info("Export of sign data END: " + end);

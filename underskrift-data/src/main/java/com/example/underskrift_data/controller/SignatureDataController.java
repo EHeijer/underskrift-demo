@@ -20,19 +20,19 @@ public class SignatureDataController {
         this.signatureDataService = signatureDataService;
     }
 
-    @PostMapping()
+    @PostMapping
     public String saveAndForwardIncomingSignatureData(@RequestBody SignatureDataDTO signatureDataDto) {
 
         try {
             signatureDataService.saveSignatureData(signatureDataDto);
-            signatureDataService.sendSignatureDataEvent(signatureDataDto);
+            //signatureDataService.sendSignatureDataEvent(signatureDataDto);
+
+            log.info("Sign data saved to DB and sent to topic");
+            return "Success!!";
         } catch (Exception e) {
             log.error("Could not handle incoming sign data: " + signatureDataDto.getSignatureId());
             // todo create error audit event here
             throw new RuntimeException("Error while trying to handle incoming sign data, got error: "+ e);
         }
-
-        log.info("Sign data saved to DB and sent to topic");
-        return "Success!!";
     }
 }

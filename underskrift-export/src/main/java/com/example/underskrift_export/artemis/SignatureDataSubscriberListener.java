@@ -1,16 +1,14 @@
 package com.example.underskrift_export.artemis;
 
 import com.example.underskrift_export.models.SignatureDataDTO;
-import com.example.underskrift_export.services.SignDataService;
+import com.example.underskrift_export.services.ReceiveDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.jms.BytesMessage;
-import jakarta.jms.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,11 +16,11 @@ import java.util.List;
 @Slf4j
 public class SignatureDataSubscriberListener {
 
-    private final SignDataService signDataService;
+    private final ReceiveDataService receiveDataService;
     private final ObjectMapper objectMapper;
 
-    public SignatureDataSubscriberListener(SignDataService signDataService, ObjectMapper objectMapper) {
-        this.signDataService = signDataService;
+    public SignatureDataSubscriberListener(ReceiveDataService receiveDataService, ObjectMapper objectMapper) {
+        this.receiveDataService = receiveDataService;
         this.objectMapper = objectMapper;
     }
 
@@ -37,18 +35,16 @@ public class SignatureDataSubscriberListener {
         try {
             log.info("Received message: " + message);
             boolean isBatch = message.getBooleanProperty("isBatch");
-            //byte[] payloadAsBytes = new byte[(int) message.getBodyLength()];
+            byte[] payloadAsBytes = message.getBody(byte[].class);
 
             if(isBatch) {
                 //List<SignatureDataDTO> signatureDataDtoList = message.getBody(List.class);
                 //byte[] payloadAsBytes = new byte[(int) message.getBodyLength()];'
-                byte[] payloadAsBytes = message.getBody(byte[].class);
                 List<SignatureDataDTO> signatureDataDtoList = readAsSignDataDtoList(payloadAsBytes);
-                signDataService.saveSignDataInBatch(signatureDataDtoList);
+                receiveDataService.saveSignDataInBatch(signatureDataDtoList);
             } else {
-                SignatureDataDTO signatureDataDto = message.getBody(SignatureDataDTO.class);
-                //SignatureDataDTO signatureDataDto = readAsSignDataDto(payloadAsBytes);
-                signDataService.saveSignData(signatureDataDto);
+                SignatureDataDTO signatureDataDto = readAsSignDataDto(payloadAsBytes);
+                receiveDataService.saveSignData(signatureDataDto);
             }
             log.info("signature data saved to DB");
         } catch (Exception exception) {

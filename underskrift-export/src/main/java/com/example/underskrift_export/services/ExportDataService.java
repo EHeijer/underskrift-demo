@@ -1,22 +1,24 @@
 package com.example.underskrift_export.services;
 
 import com.example.underskrift_export.mapper.SignDataMapper;
-
-import com.example.underskrift_export.models.SignatureDataUbmEntity;
 import com.example.underskrift_export.models.SignatureDataDTO;
+import com.example.underskrift_export.models.SignatureDataUbmEntity;
+import com.example.underskrift_export.models.SyncRequest;
 import com.example.underskrift_export.repositories.SignatureDataRepository;
 import com.example.underskrift_export.utils.BatchFileHelper;
+import com.example.underskrift_export.utils.JmsHelper;
 import com.example.underskrift_export.utils.SignDataSchemaValidator;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.example.underskrift_export.utils.SqlWithParams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.jms.BytesMessage;
 import jakarta.jms.DeliveryMode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +29,6 @@ import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -38,93 +39,53 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
 @Service
+@EnableAsync
 @Slf4j
-public class SignDataService {
+public class ExportDataService {
 
     public static final String SIGNATURE_DATA_UBM_TABLE = "signature_data_ubm";
     public static final String EXPORTED_SIGNATURE_DATA_TABLE = "exported_signature_data";
     public static final int GZIP_TRESHOLD = 150000;
+    private static final int DELETE_BATCH_SIZE = 1000;
+    private static final int ARCHIVE_BATCH_SIZE = 1000;
+    private static final int MAX_ROWS_PER_FILE = 500_000;
     private final SignatureDataRepository signatureDataRepository;
+    private final JmsTemplate jmsQueueTemplate;
+    private final BatchFileHelper batchFileHelper;
+    private final JdbcTemplate jdbcTemplate;
     private final SignDataMapper signDataMapper;
     private final ObjectMapper objectMapper;
     private final SignDataSchemaValidator signDataSchemaValidator;
-    private final JmsTemplate jmsQueueTemplate;
-    private final BatchFileHelper batchFileHelper;
-    private final ExportedSignatureDataService exportedSignatureDataService;
-    private final JdbcTemplate jdbcTemplate;
-    private static final int DELETE_BATCH_SIZE = 1000;
-    private static final int ARCHIVE_BATCH_SIZE = 1000;
+    private final JmsHelper jmsHelper;
 
-    public SignDataService(SignatureDataRepository signatureDataRepository,
-                           SignDataMapper signDataMapper,
-                           ObjectMapper objectMapper,
-                           SignDataSchemaValidator signDataSchemaValidator,
-                           @Qualifier("jmsQueueTemplate") JmsTemplate jmsQueueTemplate,
-                           BatchFileHelper batchFileHelper,
-                           ExportedSignatureDataService exportedSignatureDataService,
-                           JdbcTemplate jdbcTemplate) {
+    @Value("${export-queue:sign-data-export-ubm}")
+    private String exportQueueName;
+
+    public ExportDataService(SignatureDataRepository signatureDataRepository,
+                             JmsTemplate jmsQueueTemplate,
+                             BatchFileHelper batchFileHelper,
+                             JdbcTemplate jdbcTemplate, SignDataMapper signDataMapper, ObjectMapper objectMapper, SignDataSchemaValidator signDataSchemaValidator, JmsHelper jmsHelper) {
         this.signatureDataRepository = signatureDataRepository;
+        this.jmsQueueTemplate = jmsQueueTemplate;
+        this.batchFileHelper = batchFileHelper;
+        this.jdbcTemplate = jdbcTemplate;
         this.signDataMapper = signDataMapper;
         this.objectMapper = objectMapper;
         this.signDataSchemaValidator = signDataSchemaValidator;
-        this.jmsQueueTemplate = jmsQueueTemplate;
-        this.batchFileHelper = batchFileHelper;
-        this.exportedSignatureDataService = exportedSignatureDataService;
-        this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public SignatureDataUbmEntity saveSignData(SignatureDataDTO signatureDataDto) throws JsonProcessingException {
-        String signDataAsJsonString = objectMapper.writeValueAsString(signatureDataDto);
-        signDataSchemaValidator.validateJsonData(signDataAsJsonString);
-        SignatureDataUbmEntity signatureDataUbmEntity = signDataMapper.mapToSignDataEntity(signatureDataDto, signDataAsJsonString);
-        return signatureDataRepository.save(signatureDataUbmEntity);
-    }
-
-    public void saveSignDataInBatch(List<SignatureDataDTO> signatureDataDtoList) throws JsonProcessingException {
-
-        List<Object[]> batch = new ArrayList<>();
-        Date savedAt = new Date();
-        for (int i = 0; i < signatureDataDtoList.size(); i++) {
-            SignatureDataDTO signatureDataDTO = signatureDataDtoList.get(i);
-            String signDataAsJsonString = objectMapper.writeValueAsString(signatureDataDTO);
-            signDataSchemaValidator.validateJsonData(signDataAsJsonString);
-            //SignatureDataUbmEntity signatureDataUbmEntity = signDataMapper.mapToSignDataEntity(signatureDataDTO, signDataAsJsonString);
-            batch.add(new Object[]{signatureDataDTO.getSignatureId(), signatureDataDTO.getTimestamp(), savedAt, signDataAsJsonString});
-        }
-
-        jdbcTemplate.batchUpdate(
-                "INSERT INTO " + SIGNATURE_DATA_UBM_TABLE + " (signature_id, signed_at, saved_at, signature_data_json) VALUES (?, ?, ?, ?)", batch);
-
+        this.jmsHelper = jmsHelper;
     }
 
     @Transactional
     public void exportArchiveAndDelete() throws IOException {
 
-        Instant startCount = Instant.now();
-
-        int numberOfSignatureDataToExport = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + SIGNATURE_DATA_UBM_TABLE, Integer.class);
-
-        Instant endCount = Instant.now();
-        System.out.println("Count elapsed Time: " + Duration.between(startCount, endCount).toString());
-
-        log.info("Number of sign data to export: " + numberOfSignatureDataToExport);
-        if(numberOfSignatureDataToExport == 0) {
-            // since no signature data was fetched, no data will be exported.
-            return;
-        }
-
-        boolean useGzip = numberOfSignatureDataToExport > GZIP_TRESHOLD;
-
-        File tempFile = batchFileHelper.createTempFile(useGzip);
+        File tempFile = batchFileHelper.createTempFile();
 
         Instant startFetchWriteAndDelete = Instant.now();
 
         try (
                 OutputStream fileOut = new FileOutputStream(tempFile);
-                OutputStream bufferedOut = new BufferedOutputStream(fileOut, 256 * 1024);
-                OutputStream maybeGzipOut = useGzip ? new GZIPOutputStream(bufferedOut) : bufferedOut;
-                Writer writer = new BufferedWriter(new OutputStreamWriter(maybeGzipOut, StandardCharsets.UTF_8), 256 * 1024)
+                OutputStream outputStream = new GZIPOutputStream(new BufferedOutputStream(fileOut, 256 * 1024));
+                Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), 256 * 1024)
         ) {
 
             jdbcTemplate.query(con -> {
@@ -201,7 +162,6 @@ public class SignDataService {
                 throw new UncheckedIOException(e);
             }
 
-            message.setBooleanProperty("gzip", useGzip);
             message.setStringProperty("filename", tempFile.getName());
             message.setJMSDeliveryMode(DeliveryMode.PERSISTENT);
             return message;
@@ -234,7 +194,6 @@ public class SignDataService {
                 ids.toArray());
     }
 
-
     @Transactional
     public void exportSignData() throws IOException {
 
@@ -263,7 +222,7 @@ public class SignDataService {
         byte[] fileContent = batchFileHelper.getFileContent(fileName);
 
         //Send file content to queue
-        jmsQueueTemplate.convertAndSend("sign-data-export-ubm", fileContent);
+        jmsQueueTemplate.convertAndSend(exportQueueName, fileContent);
         log.info("filinnehåll för {} skickad till kö {} ", fileName, "sign-data-export-ubm");
 
         //Delete file
@@ -276,8 +235,38 @@ public class SignDataService {
         log.info("List of SignatureDataEntity is deleted");
 
         //Save id for all exported signature data to be able to resend data in future
-        exportedSignatureDataService.saveExportedSignatureIdsInBulk(signatureDataUbmEntityList);
+        saveExportedSignatureIdsInBulk(signatureDataUbmEntityList);
         log.info("Ids for all exported signature data is saved");
+    }
+
+    private void saveExportedSignatureIdsInBulk(List<SignatureDataUbmEntity> signatureDataUbmEntityList) {
+        String sql = "INSERT INTO exported_signature_data (signature_id, signed_at, exported_at) VALUES (?, ?, ?)";
+        //                                                      1             2           3              1  2  3
+
+        OffsetDateTime exportedAt = OffsetDateTime.now();
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                SignatureDataUbmEntity signatureDataUbmEntity = signatureDataUbmEntityList.get(i);
+                ps.setString(1, signatureDataUbmEntity.getSignatureId());
+                ps.setObject(2, signatureDataUbmEntity.getSignedAt()); // Använder OffsetDateTime
+                ps.setObject(3, exportedAt);
+            }
+
+            public int getBatchSize() {
+                return signatureDataUbmEntityList.size();
+            }
+        });
+
+//        for (int i = 0; i < signatureDataEntityList.size(); i++) {
+//            SignatureDataEntity signatureDataEntity = signatureDataEntityList.get(i);
+//            exportedSignDataRepository.saveExportedSignatureId(
+//                    signatureDataEntity.getSignatureId(),
+//                    signatureDataEntity.getSignedAt(),
+//                    exportedAt
+//            );
+//        }
+
     }
 
     private void deleteInBatchByIds(List<SignatureDataUbmEntity> signatureDataUbmEntityList) {
@@ -307,4 +296,151 @@ public class SignDataService {
         }
     }
 
+    @Async
+    public void syncSignatureDataFromSource(SyncRequest syncRequest) {
+
+        try {
+            log.info("Starting sync...");
+
+            // 1. Evaluate SQL and params
+            SqlWithParams sqlWithParams = evaluateSqlFromRequest(syncRequest);
+
+            // 2. Execute query
+            jdbcTemplate.query(con -> {
+                PreparedStatement ps = con.prepareStatement(
+                        sqlWithParams.getSql(),
+                        ResultSet.TYPE_FORWARD_ONLY,
+                        ResultSet.CONCUR_READ_ONLY
+                );
+                //För PostgreSQL är dessaa krav för strömning att fungera:
+                con.setAutoCommit(false);
+                ps.setFetchSize(1000);
+
+                // set param values
+                List<Object> params = sqlWithParams.getParams();
+                for (int i = 0; i < params.size(); i++) {
+                    ps.setObject(i + 1, params.get(i));
+                }
+
+                return ps;
+            }, (ResultSet resultSet) -> {
+
+                List<Object[]> archiveBatch = new ArrayList<>(ARCHIVE_BATCH_SIZE);
+                Date exportedAt = new Date();
+                int currentRowInFile = 0;
+                File tempFile = null;
+                Writer writer = null;
+
+                // 3. Loop through result set
+                while (resultSet.next()) {
+                    try {
+
+                        if(currentRowInFile == 0) {
+                            tempFile = batchFileHelper.createTempFile();
+                            OutputStream fileOut = new FileOutputStream(tempFile);
+                            OutputStream outputStream = new GZIPOutputStream(new BufferedOutputStream(fileOut, 256 * 1024));
+                            writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), 256 * 1024);
+                        }
+
+                        // Map resultSet to SignatureDataDTO and validate the json
+                        SignatureDataDTO signatureDataDTO = signDataMapper.mapToSignatureDataDTO(resultSet);
+                        String signDataAsJsonString = objectMapper.writeValueAsString(signatureDataDTO);
+                        signDataSchemaValidator.validateJsonData(signDataAsJsonString);
+
+                        try {
+                            writer.write(signDataAsJsonString + System.lineSeparator());
+                        } catch (IOException exception) {
+                            log.error("Error when trying to write sign data to temp file: ", exception);
+                            throw new RuntimeException(exception);
+                        }
+
+                        currentRowInFile++;
+
+                        // Förbered för arkivering
+                        archiveBatch.add(new Object[]{signatureDataDTO.getSignatureId(), signatureDataDTO.getTimestamp(), exportedAt});
+
+                        // Skicka batch till arkiv(exported_signature_data) + töm batchlista
+                        if (archiveBatch.size() >= ARCHIVE_BATCH_SIZE) {
+                            archiveExportedSignatures(archiveBatch);
+                            archiveBatch.clear();
+                        }
+
+
+                        if(currentRowInFile >= MAX_ROWS_PER_FILE){
+
+                            //close writer
+                            batchFileHelper.flushAndClose(writer);
+
+                            //send to queue
+                            jmsHelper.streamFileContentToQueue(exportQueueName, tempFile);
+
+                            //remove old temp file
+                            if(!tempFile.delete()) {
+                                log.error("Could not delete tempFile");
+                            }
+
+                            currentRowInFile = 0;
+                        }
+
+
+                    } catch (Exception e) {
+
+                        throw new RuntimeException("Error handling result set:", e);
+                    }
+                }
+
+
+                //
+                if(currentRowInFile > 0) {
+                    batchFileHelper.flushAndClose(writer);
+                    jmsHelper.streamFileContentToQueue(exportQueueName, tempFile);
+
+                    if(!tempFile.delete()) {
+                        log.error("Could not delete tempFile");
+                    }
+                }
+
+                // sista batcharna
+                if (!archiveBatch.isEmpty()) {
+                    archiveExportedSignatures(archiveBatch);
+                    archiveBatch.clear();
+                }
+
+
+                return null; // Eftersom vi strömmar och skriver direkt, vi returnerar inget.
+            });
+
+        } catch (Exception exception){
+            log.error("Sync error: ", exception);
+        }
+
+    }
+
+    private SqlWithParams evaluateSqlFromRequest(SyncRequest syncRequest) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM signature_data WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if(syncRequest.isSyncAll()) {
+            sql.append(" ORDER BY id");
+            return SqlWithParams.builder()
+                    .sql(sql.toString())
+                    .params(params)
+                    .build();
+        }
+
+        if (syncRequest.getFromDate() != null) {
+            sql.append(" AND timestamp >= ?");
+            params.add(java.sql.Date.valueOf(syncRequest.getFromDate()));
+        }
+        if (syncRequest.getToDate() != null) {
+            sql.append(" AND timestamp <= ?");
+            params.add(java.sql.Date.valueOf(syncRequest.getToDate()));
+        }
+
+        sql.append(" ORDER BY id");
+        return SqlWithParams.builder()
+                .sql(sql.toString())
+                .params(params)
+                .build();
+    }
 }
